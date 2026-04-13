@@ -10,7 +10,7 @@ using System.Windows.Media.Animation;
 using YeusepesModules.ShazamOSC.ShazamAPI;
 
 namespace YeusepesModules.ShazamOSC.UI
-{    
+{
 
     public class ShazamRecognitionContext : INotifyPropertyChanged
     {
@@ -142,6 +142,7 @@ namespace YeusepesModules.ShazamOSC.UI
     /// </summary>
     public partial class LastRecognized : UserControl
     {
+        private readonly ShazamOSC _module;
         private readonly LevelToScaleConverter _circleConverter = new LevelToScaleConverter();
         private readonly InverseLevelToScaleConverter _logoConverter = new InverseLevelToScaleConverter();
         private readonly SineEase _easing = new SineEase { EasingMode = EasingMode.EaseOut };
@@ -149,6 +150,7 @@ namespace YeusepesModules.ShazamOSC.UI
         public LastRecognized(ShazamOSC module)
         {
             InitializeComponent();
+            _module = module;
             DataContext = module.RecognitionContext;
 
             module.RecognitionContext.PropertyChanged += (s, e) =>
@@ -174,7 +176,10 @@ namespace YeusepesModules.ShazamOSC.UI
                 transform.BeginAnimation(ScaleTransform.ScaleYProperty, anim);
             }));
         }
+
+        private void OnRecognizeClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            _module.TriggerRecognition();
+        }
     }
-
-
 }

@@ -59,6 +59,14 @@ namespace YeusepesModules.ShazamOSC
 
         public ShazamRecognitionContext RecognitionContext { get; } = new ShazamRecognitionContext();
 
+        public void TriggerRecognition()
+        {
+            // Cancel any in‑flight run, then start a new one
+            _recognitionCts?.Cancel();
+            _recognitionCts = new CancellationTokenSource();
+            _ = Task.Run(() => RecognizeFromDesktop(_recognitionCts.Token), _recognitionCts.Token);
+        }
+
         protected override void OnPreLoad()
         {
             LogDebug("OnPreLoad: registering parameters and settings.");
@@ -171,10 +179,7 @@ namespace YeusepesModules.ShazamOSC
                 bool shouldStart = parameter.GetValue<bool>();
                 if (shouldStart)
                 {
-                    // cancel any in‑flight run, then start a new one
-                    _recognitionCts?.Cancel();
-                    _recognitionCts = new CancellationTokenSource();
-                    _ = Task.Run(() => RecognizeFromDesktop(_recognitionCts.Token), _recognitionCts.Token);
+                    TriggerRecognition();
                 }
                 else
                 {
