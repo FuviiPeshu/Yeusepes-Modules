@@ -502,6 +502,7 @@ namespace YeusepesModules.ShazamOSC
         private void StartRecognition()
         {
             var newCts = new CancellationTokenSource();
+            var token = newCts.Token;
             CancellationTokenSource? previousCts;
 
             lock (_recognitionCtsLock)
@@ -513,8 +514,7 @@ namespace YeusepesModules.ShazamOSC
             previousCts?.Cancel();
             previousCts?.Dispose();
 
-            var token = newCts.Token;
-            _ = Task.Run(() => RecognizeFromDesktop(token), token);
+            _ = Task.Run(() => RecognizeFromDesktop(token));
         }
 
         private void CancelRecognition()
