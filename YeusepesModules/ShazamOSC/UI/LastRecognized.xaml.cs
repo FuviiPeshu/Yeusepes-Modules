@@ -14,10 +14,11 @@ namespace YeusepesModules.ShazamOSC.UI
 
     public class ShazamRecognitionContext : INotifyPropertyChanged
     {
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
-        private string _title, _artist, _coverArtUrl;
-        private double _soundLevel;
+        private string _title = "";
+        private string _artist = "";
+        private string _coverArtUrl = "";
         private bool _isListening;    // ← new
         private double _bassLevel;
         private double _trebleLevel;
@@ -59,7 +60,7 @@ namespace YeusepesModules.ShazamOSC.UI
             set { _isListening = value; OnPropertyChanged(); }
         }
 
-        protected void OnPropertyChanged([CallerMemberName] string name = null)
+        protected void OnPropertyChanged([CallerMemberName] string? name = null)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
     public class LevelToScaleConverter : IValueConverter

@@ -50,9 +50,9 @@ namespace YeusepesModules.ShazamOSC
         private readonly List<string> savedSongs = new();
         private string lastSong = string.Empty;
 
-        private IServiceProvider _provider;
-        private IShazamUtilities _utils;
-        private DispatcherTimer _liveTimer;
+        private IServiceProvider _provider = null!;
+        private IShazamUtilities _utils = null!;
+        private DispatcherTimer _liveTimer = null!;
         private bool LiveListening = false;
 
         private readonly object _recognitionCtsLock = new();
@@ -434,10 +434,11 @@ namespace YeusepesModules.ShazamOSC
                     // wherever you process a successful recognition:
                     RecognitionContext.Title = title;
                     RecognitionContext.Artist = artist;
-                    RecognitionContext.CoverArtUrl = trackNode["images"]?["coverart"]?.GetValue<string>() ?? "";                    
+                    var imagesNode = trackNode["images"] as JsonObject;
+                    RecognitionContext.CoverArtUrl = imagesNode?["coverart"]?.GetValue<string>() ?? "";
                     
                     return true;
-                }                
+                }
                 _utils.LogDebug("RecognizeAttempt: no signatures yielded any match");
                 return false;
             }
@@ -562,7 +563,7 @@ namespace YeusepesModules.ShazamOSC
             SetVariableValue("RecognizedSong", lastSong);
         }
 
-        private void OnLiveTimerTick(object sender, EventArgs e)
+        private void OnLiveTimerTick(object? sender, EventArgs e)
         {
             try
             {
