@@ -55,17 +55,10 @@ namespace YeusepesModules.ShazamOSC
         private DispatcherTimer _liveTimer;
         private bool LiveListening = false;
 
+        private readonly object _recognitionCtsLock = new();
         private CancellationTokenSource? _recognitionCts;
 
         public ShazamRecognitionContext RecognitionContext { get; } = new ShazamRecognitionContext();
-
-        public void TriggerRecognition()
-        {
-            // Cancel any in‑flight run, then start a new one
-            _recognitionCts?.Cancel();
-            _recognitionCts = new CancellationTokenSource();
-            _ = Task.Run(() => RecognizeFromDesktop(_recognitionCts.Token), _recognitionCts.Token);
-        }
 
         protected override void OnPreLoad()
         {
@@ -149,7 +142,7 @@ namespace YeusepesModules.ShazamOSC
         }
         protected override Task OnModuleStop()
         {
-            _recognitionCts?.Cancel();
+            DisposeRecognition();
             if (_liveTimer?.IsEnabled == true)
                 _liveTimer.Stop();
             base.OnModuleStop();
@@ -184,7 +177,7 @@ namespace YeusepesModules.ShazamOSC
                 else
                 {
                     // user flipped Recognize back off
-                    _recognitionCts?.Cancel();
+                    CancelRecognition();
                 }
             }
             if (parameter.Lookup.Equals(ShazamParameters.LiveListening))
@@ -500,8 +493,50 @@ namespace YeusepesModules.ShazamOSC
         /// </summary>
         public new void LogDebug(string message) => base.LogDebug(message);
 
+        public void TriggerRecognition()
+        {
+            StartRecognition();
+        }
 
+        private void StartRecognition()
+        {
+            var newCts = new CancellationTokenSource();
+            CancellationTokenSource? previousCts;
 
+            lock (_recognitionCtsLock)
+            {
+                previousCts = _recognitionCts;
+                _recognitionCts = newCts;
+            }
+
+            previousCts?.Cancel();
+            previousCts?.Dispose();
+
+            var token = newCts.Token;
+            _ = Task.Run(() => RecognizeFromDesktop(token), token);
+        }
+
+        private void CancelRecognition()
+        {
+            lock (_recognitionCtsLock)
+            {
+                _recognitionCts?.Cancel();
+            }
+        }
+
+        private void DisposeRecognition()
+        {
+            CancellationTokenSource? currentCts;
+
+            lock (_recognitionCtsLock)
+            {
+                currentCts = _recognitionCts;
+                _recognitionCts = null;
+            }
+
+            currentCts?.Cancel();
+            currentCts?.Dispose();
+        }
 
         private void SaveDebugRecording(MemoryStream audio)
         {
@@ -540,13 +575,8 @@ namespace YeusepesModules.ShazamOSC
                 }
 
                 LogDebug("Live listening timer tick - starting recognition attempt");
-                
-                // Cancel any existing recognition
-                _recognitionCts?.Cancel();
-                _recognitionCts = new CancellationTokenSource();
-                
-                // Start recognition in background
-                _ = Task.Run(() => RecognizeFromDesktop(_recognitionCts.Token), _recognitionCts.Token);
+
+                StartRecognition();
             }
             catch (Exception ex)
             {
